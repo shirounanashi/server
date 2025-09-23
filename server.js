@@ -88,7 +88,7 @@ app.get('/', (req, res) => {
 // Inicialização simplificada do servidor
 server.listen(PORT, () => {
     console.log(`🎵 SyncMusic Server rodando na porta ${PORT}`);
-    console.log('📱 Servidor pronto para conexões!`);
+    console.log('📱 Servidor pronto para conexões!');
 });
 
 // REMOVA todas as funções: getLocalIP, setupUPnP, cleanupUPnP, tryGetPublicIPAlternative
