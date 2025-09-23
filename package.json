@@ -1,0 +1,16 @@
+{
+  "name": "sync-audio-server",
+  "version": "1.0.0",
+  "description": "Server for real-time audio streaming",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "author": "Gemini",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.21.2",
+    "nat-upnp": "^1.1.1",
+    "socket.io": "^4.8.1"
+  }
+}
