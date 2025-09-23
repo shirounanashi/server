@@ -28,7 +28,7 @@ const io = new Server(server, {
 });
 
 // A plataforma define a porta. Não defina como 3000 fixo.
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 3000;
 
 // Armazenamento em memória (continua igual)
 let activeStreamers = new Set();
