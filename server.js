@@ -1,11 +1,11 @@
-// server.js - Versão para a Nuvem (Render, Fly.io, etc.)
+// server.js - VERSÃO COMPLETA PARA DEPURAÇÃO NO RENDER
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 
 const app = express();
 
-// Middlewares (seu código de CORS aqui está bom)
+// Middlewares
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
@@ -27,69 +27,112 @@ const io = new Server(server, {
     }
 });
 
-// A plataforma define a porta. Não defina como 3000 fixo.
 const PORT = process.env.PORT || 3000;
 
-// Armazenamento em memória (continua igual)
+// Armazenamento em memória
 let activeStreamers = new Set();
 let activeListeners = new Set();
 
-// Toda a lógica do io.on('connection', ...) continua EXATAMENTE a mesma.
-// Copie e cole toda a sua seção io.on('connection', (socket) => { ... }); aqui.
 io.on('connection', (socket) => {
-    console.log(`Usuario conectado: ${socket.id}`);
+    // [MUDANÇA PARA DEPURAÇÃO] Log detalhado de conexão
+    console.log(`[CONNECT] Socket ${socket.id} conectado.`);
 
-    // ... todos os seus eventos 'start-stream', 'audio-chunk', 'disconnect', etc. ...
+    socket.on('start-stream', () => {
+        // [MUDANÇA PARA DEPURAÇÃO] Log de evento
+        console.log(`[EVENT start-stream] recebido de ${socket.id}`);
+        socket.join('streamer');
+        activeStreamers.add(socket.id);
+        console.log(`${socket.id} iniciou streaming. Streamers ativos: ${activeStreamers.size}`);
+        socket.to('listener').emit('streamer-started', { streamerId: socket.id });
+    });
+
+    socket.on('join-stream', () => {
+        // [MUDANÇA PARA DEPURAÇÃO] Log de evento
+        console.log(`[EVENT join-stream] recebido de ${socket.id}`);
+        socket.join('listener');
+        activeListeners.add(socket.id);
+        console.log(`${socket.id} entrou como listener. Listeners ativos: ${activeListeners.size}`);
+        if (activeStreamers.size > 0) {
+            socket.emit('streamer-available', { streamersCount: activeStreamers.size });
+        }
+    });
+
+    socket.on('audio-chunk', (chunk) => {
+        // [MUDANÇA PARA DEPURAÇÃO] Log de evento com tamanho do chunk
+        const chunkSize = chunk ? (chunk.byteLength || chunk.length) : 0;
+        console.log(`[EVENT audio-chunk] recebido de ${socket.id} | Tamanho: ${chunkSize} bytes`);
+
+        if (activeStreamers.has(socket.id)) {
+            // [MUDANÇA PARA DEPURAÇÃO] A linha principal de retransmissão foi desativada para o teste.
+            // O objetivo é ver se as desconexões param quando o servidor não precisa retransmitir os dados.
+            // socket.to('listener').emit('audio-chunk', chunk);
+            console.log('[DEBUG] Retransmissão de audio-chunk DESATIVADA para teste.');
+        }
+    });
+
+    socket.on('stop-stream', () => {
+        // [MUDANÇA PARA DEPURAÇÃO] Log de evento
+        console.log(`[EVENT stop-stream] recebido de ${socket.id}`);
+        if (activeStreamers.has(socket.id)) {
+            activeStreamers.delete(socket.id);
+            socket.leave('streamer');
+            console.log(`${socket.id} parou streaming. Streamers ativos: ${activeStreamers.size}`);
+            socket.to('listener').emit('streamer-stopped', { streamerId: socket.id });
+        }
+    });
+
     socket.on('get-status', () => {
+        // [MUDANÇA PARA DEPURAÇÃO] Log de evento
+        console.log(`[EVENT get-status] recebido de ${socket.id}`);
         socket.emit('server-status', {
             streamers: activeStreamers.size,
             listeners: activeListeners.size,
-            uptime: process.uptime(),
-            timestamp: Date.now()
+            uptime: process.uptime()
         });
     });
 
-    socket.on('disconnect', () => {
-        console.log('Usuario desconectado:', socket.id);
+    socket.on('error', (error) => {
+        // [MUDANÇA PARA DEPURAÇÃO] Log de erro específico do socket
+        console.error(`[ERROR] Erro no socket ${socket.id}:`, error);
+    });
+
+    socket.on('disconnect', (reason) => {
+        // [MUDANÇA PARA DEPURAÇÃO] Log de desconexão com o MOTIVO, essencial para depurar
+        console.log(`[DISCONNECT] Socket ${socket.id} desconectado | Motivo: ${reason}`);
+
         if (activeStreamers.has(socket.id)) {
             activeStreamers.delete(socket.id);
-            socket.to('listener').emit('streamer-stopped', { streamerId: socket.id });
+            socket.to('listener').emit('streamer-stopped', { streamerId: socket.id, reason: 'disconnect' });
         }
         if (activeListeners.has(socket.id)) {
             activeListeners.delete(socket.id);
         }
+        console.log(`Status após desconexão - Streamers: ${activeStreamers.size}, Listeners: ${activeListeners.size}`);
     });
-
-    // ... adicione todos os outros eventos do socket.io aqui ...
 });
 
-
-// Endpoints HTTP (continua igual, mas removendo referências a IP local/UPnP)
+// Endpoints HTTP
 app.get('/status', (req, res) => {
     res.json({
         status: 'running',
         streamers: activeStreamers.size,
         listeners: activeListeners.size,
         uptime: process.uptime(),
-        version: '1.0.0-cloud'
+        version: '1.0.0-cloud-debug'
     });
 });
 
 app.get('/', (req, res) => {
     res.send(`
-        <h1>🎵 SyncMusic Server</h1>
+        <h1>🎵 SyncMusic Server (Modo de Depuração)</h1>
         <p>Status: Rodando</p>
         <p>Streamers ativos: ${activeStreamers.size}</p>
         <p>Listeners ativos: ${activeListeners.size}</p>
-        <p><a href="/status">Ver status em JSON</a></p>
     `);
 });
 
-// Inicialização simplificada do servidor
+// Inicialização do servidor
 server.listen(PORT, () => {
-    console.log(`🎵 SyncMusic Server rodando na porta ${PORT}`);
+    console.log(`🎵 SyncMusic Server (Modo de Depuração) rodando na porta ${PORT}`);
     console.log('📱 Servidor pronto para conexões!');
 });
-
-// REMOVA todas as funções: getLocalIP, setupUPnP, cleanupUPnP, tryGetPublicIPAlternative
-// REMOVA todos os listeners de process.on('SIGINT'), etc, que chamam cleanupUPnP
