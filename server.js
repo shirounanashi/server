@@ -20,7 +20,8 @@ app.use((req, res, next) => {
 const server = http.createServer(app);
 
 const io = new Server(server, {
-    transports: ['websocket', 'polling'],
+    // [MUDANÇA PARA DEPURAÇÃO] Forçando apenas polling para testar estabilidade
+    transports: ['polling'], 
     cors: {
         origin: "*",
         methods: ["GET", "POST", "OPTIONS"]
