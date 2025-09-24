@@ -20,12 +20,18 @@ app.use((req, res, next) => {
 const server = http.createServer(app);
 
 const io = new Server(server, {
-    // [MUDANÇA PARA DEPURAÇÃO] Forçando apenas polling para testar estabilidade
-    transports: ['polling'], 
-    cors: {
-        origin: "*",
-        methods: ["GET", "POST", "OPTIONS"]
-    }
+  // Opções existentes
+  transports: ['websocket', 'polling'],
+  allowEIO3: true,
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  },
+
+  // --- ADIÇÃO CRÍTICA ---
+  // Aumenta o tempo de espera pela resposta do "pong" para 60 segundos.
+  // Isso corrige as desconexões em redes lentas ou com proxies (zrok/ngrok).
+  pingTimeout: 60000
 });
 
 const PORT = process.env.PORT || 3000;
