@@ -25,21 +25,18 @@ const io = new Server(server, {
     methods: ["GET", "POST"]
   },
 
-  // --- CONFIGURAÇÃO ROBUSTA PARA PROXIES ---
-
-  // 1. Força o uso de WebSocket primeiro, que é mais eficiente.
+  // Força o uso de WebSocket primeiro.
   transports: ['websocket', 'polling'],
 
-  // 2. Aumenta o tempo de espera pela resposta do cliente para 30 segundos.
-  // O padrão (5s) é muito baixo para redes móveis + proxies.
+  // Aumenta o tempo de espera pela resposta do cliente para 30 segundos.
   pingTimeout: 30000,
 
-  // 3. Envia um "ping" para o cliente a cada 15 segundos.
-  // Isso mantém a conexão "viva" através de firewalls e proxies.
-  // O padrão (25s) é muito longo e permite que a conexão seja derrubada.
+  // Envia um "ping" para o cliente a cada 15 segundos.
+  // **ESTA É A LINHA MAIS IMPORTANTE PARA O RENDER.**
+  // Mantém a conexão "viva" e evita o "idle timeout" do proxy.
   pingInterval: 15000,
 
-  // 4. Mantém a flag de compatibilidade que ajuda com alguns proxies.
+  // Flag de compatibilidade que pode ajudar.
   allowEIO3: true
 });
 
