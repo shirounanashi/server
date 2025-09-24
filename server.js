@@ -20,18 +20,27 @@ app.use((req, res, next) => {
 const server = http.createServer(app);
 
 const io = new Server(server, {
-  // Opções existentes
-  transports: ['websocket', 'polling'],
-  allowEIO3: true,
   cors: {
     origin: "*",
     methods: ["GET", "POST"]
   },
 
-  // --- ADIÇÃO CRÍTICA ---
-  // Aumenta o tempo de espera pela resposta do "pong" para 60 segundos.
-  // Isso corrige as desconexões em redes lentas ou com proxies (zrok/ngrok).
-  pingTimeout: 60000
+  // --- CONFIGURAÇÃO ROBUSTA PARA PROXIES ---
+
+  // 1. Força o uso de WebSocket primeiro, que é mais eficiente.
+  transports: ['websocket', 'polling'],
+
+  // 2. Aumenta o tempo de espera pela resposta do cliente para 30 segundos.
+  // O padrão (5s) é muito baixo para redes móveis + proxies.
+  pingTimeout: 30000,
+
+  // 3. Envia um "ping" para o cliente a cada 15 segundos.
+  // Isso mantém a conexão "viva" através de firewalls e proxies.
+  // O padrão (25s) é muito longo e permite que a conexão seja derrubada.
+  pingInterval: 15000,
+
+  // 4. Mantém a flag de compatibilidade que ajuda com alguns proxies.
+  allowEIO3: true
 });
 
 const PORT = process.env.PORT || 3000;
